@@ -47,6 +47,8 @@ graph TD
     FS --> DISK
 ```
 
+> Note: The Provider Registry is the runtime dispatch layer used by the engine to look up a provider implementation by resource type.
+
 ---
 
 ## Diagram 2: Three-Way Reconciliation Logic

@@ -28,6 +28,7 @@ Use this to manually build the architecture diagram in Lucidchart (or import the
 | State Manager | Small rectangle inside Engine | Light green | `State Manager (JSON)` |
 | Plan Engine | Small rectangle inside Engine | Orange (#FFB74D) | `Plan Engine (3-way diff)` |
 | Dependency Graph | Small rectangle inside Engine | Orange | `Topological Sort` |
+| Provider Registry | Rectangle | Purple (#CE93D8) | `Provider Registry (type → provider lookup)` |
 | Provider Interface | Rectangle with dashed border | Purple (#CE93D8) | `Provider Interface (abstract)` |
 | Filesystem Provider | Rectangle solid | Purple (#7B1FA2 text white) | `Filesystem Provider` |
 | Future Provider | Rectangle dashed | Purple dashed (#CE93D8) | `Cloud / DB / HTTP (future)` |
@@ -47,11 +48,13 @@ Row 2:  [Config File]  [Engine (large box)]  [State File]
                         - Plan Engine
                         - Dependency Graph
          |
-Row 3:  [Provider Interface]
+Row 3:  [Provider Registry]
          |
-Row 4:  [Filesystem Provider]  ···  [Future Providers]
+Row 4:  [Provider Interface]
          |
-Row 5:  [Real World / Filesystem]
+Row 5:  [Filesystem Provider]  ···  [Future Providers]
+         |
+Row 6:  [Real World / Filesystem]
 ```
 
 ---
@@ -63,11 +66,14 @@ Row 5:  [Real World / Filesystem]
 | CLI | Engine | `commands` | Solid, black |
 | Config File | Engine (Config Parser) | `parse YAML` | Solid, blue |
 | Engine (State Manager) | State File | `read/write JSON` | Solid, green |
-| Engine (Plan Engine) | Provider Interface | `lookup provider` | Solid, purple |
+| Engine (Plan Engine) | Provider Registry | `lookup provider by type` | Solid, purple |
+| Provider Registry | Provider Interface | `dispatch to provider implementation` | Solid, purple |
 | Provider Interface | Filesystem Provider | `fs_file, fs_directory` | Solid, purple |
 | Provider Interface | Future Providers | `extensible` | Dashed, purple |
 | Filesystem Provider | Real World | `create / read / update / delete` | Solid, yellow |
 | Engine | Engine (Plan Engine) | `three-way diff` | Internal arrow |
+
+> Note: In the current code, `destroy` uses a simple reverse sorted order by resource address as a heuristic rather than a full reverse dependency graph. This is a useful future improvement for safer teardown ordering.
 
 ---
 
