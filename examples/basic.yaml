@@ -1,0 +1,18 @@
+resources:
+  - type: fs_directory
+    name: output_dir
+    path: ./managed/output
+
+  - type: fs_file
+    name: readme
+    path: ./managed/README.md
+    content: |
+      # Hello World
+      Managed by infrasync.
+
+  - type: fs_file
+    name: app_config
+    path: ./managed/output/config.json
+    content: '{"log_level": "info", "format": "json"}'
+    depends_on:
+      - fs_directory.output_dir
