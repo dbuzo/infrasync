@@ -1,6 +1,24 @@
-# InfraSync — Mermaid Diagrams
+# InfraSync — Architecture Diagrams
 
-Paste each code block into [mermaid.live](https://mermaid.live) to render and export as SVG/PNG.
+Exported diagrams are in [diagrams/](diagrams/). Mermaid source for each is below — paste into [mermaid.live](https://mermaid.live) to re-export.
+
+---
+
+## Diagram 2: Three-Way Reconciliation Logic
+
+![Reconciliation Logic](diagrams/reconciliation-logic.png)
+
+---
+
+## Diagram 3: Plan → Apply Sequence
+
+![Apply Sequence](diagrams/apply-sequence.png)
+
+---
+
+## Diagram 4: Dependency Graph & Apply Order
+
+![Dependency Graph](diagrams/dependency-graph.png)
 
 ---
 

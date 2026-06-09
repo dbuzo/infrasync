@@ -212,6 +212,8 @@ ARCHITECTURE
               v
        Real World (disk)
 
+![System Architecture](docs/diagrams/system-architecture.png)
+
 The engine never imports or references the filesystem provider directly. It goes through the provider registry, which maps resource types to their implementation. This means adding a cloud provider or database provider requires zero changes to the engine code — you implement the interface and register the type.
 
 
