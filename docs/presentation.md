@@ -2,28 +2,29 @@
 
 ---
 
-## SLIDE 1 — Title
+# SLIDE 1
 
 # InfraSync
-### A Declarative Infrastructure Reconciliation Engine
 
-**David Uwakwe**
+# A Declarative Infrastructure Reconciliation Engine
 
-> You write what you want to exist. InfraSync figures out what needs to change and does it.
+David Uwakwe
+
+You write what you want to exist. InfraSync figures out what needs to change and does it.
 
 ---
 
-## SLIDE 2 — The Problem
+# SLIDE 2 — The Problem
 
 # The Gap Between Intent and Reality
 
-Every infrastructure tool solves the same core problem:
+Every infrastructure tool solves the same core problem.
 
-**What you want to exist** is rarely the same as **what actually exists.**
+What you want to exist is rarely the same as what actually exists.
 
-Files get edited by hand. Directories get deleted by accident. Another script overwrites your config. A deployment changes something you were managing. Over time, your system drifts away from your declared intent — silently.
+Files get edited by hand. Directories get deleted by accident. Another script overwrites your config. A deployment changes something you were managing. Over time, your system drifts away from what you declared — silently.
 
-The question is: **how do you detect that drift and fix it automatically?**
+The question is: how do you detect that drift and fix it automatically?
 
 That is the problem InfraSync is built to solve.
 
@@ -35,45 +36,45 @@ InfraSync:       ~ fs_file.readme  (drift detected — update needed)
 
 ---
 
-## SLIDE 3 — System Architecture
+# SLIDE 3 — System Architecture
 
 # How InfraSync Is Structured
 
 ![System Architecture](diagrams/system-architecture.png)
 
-The user writes a YAML config file and runs a single command. The CLI passes that command to the Reconciliation Engine. The engine loads the config, reads the state file (its memory of what it last did), and queries the Provider to inspect what actually exists on disk. From those three sources it produces a plan — a list of creates, updates, and destroys — and executes them in dependency order. After each successful operation, state is written to disk immediately.
+The user writes a YAML config file and runs a single command. The CLI passes that command to the Reconciliation Engine. The engine loads the config, reads the state file — its memory of what it last applied — and queries the Provider to inspect what actually exists on disk. From those three sources it produces a plan and executes it in dependency order. State is written to disk after every successful operation.
 
-The Provider Registry sits between the engine and the real world. The engine never calls the Filesystem Provider directly — it calls `get_provider("fs_file")` and gets back whatever implementation is registered for that type. Swapping the backend requires zero changes to the engine.
+The Provider Registry sits between the engine and the real world. The engine never calls the Filesystem Provider directly — it calls get_provider and gets back whatever implementation is registered for that resource type. Swapping the backend requires zero changes to the engine.
 
 ---
 
-## SLIDE 4 — The Three-Way Reconciliation
+# SLIDE 4 — Three-Way Reconciliation
 
-# The Core Logic: Three-Way Comparison
+# The Core Logic
 
 ![Reconciliation Logic](diagrams/reconciliation-logic.png)
 
-On every `plan` or `apply`, the engine asks one question per resource:
+On every plan or apply, the engine asks one question per resource:
 
-> Does what you **WANT** match what you **LAST DID** match what **ACTUALLY EXISTS**?
+Does what you WANT match what you LAST DID match what ACTUALLY EXISTS?
 
-| Config | State | World | Action |
-|--------|-------|-------|--------|
-| ✓ new  | —     | —     | CREATE |
-| ✓      | ✓     | ✓ matches | NO-OP |
-| ✓      | ✓     | ✗ changed | UPDATE (drift) |
-| ✓      | ✓     | — gone | CREATE (recreate) |
-| —      | ✓     | ✓     | DESTROY |
+| Config | State | World          | Action              |
+|--------|-------|----------------|---------------------|
+| New    | —     | —              | CREATE              |
+| Yes    | Yes   | Matches        | NO-OP               |
+| Yes    | Yes   | Changed        | UPDATE — drift      |
+| Yes    | Yes   | Gone           | CREATE — recreate   |
+| —      | Yes   | Yes            | DESTROY             |
 
-**What makes this powerful:** it handles new resources, config edits, external drift, external deletion, and removal from config — all from the same comparison logic, every run.
+This handles every scenario — new resources, config edits, external drift, external deletion, and removal from config — all from the same comparison logic, every run.
 
 ---
 
-## SLIDE 5 — Live Demo
+# SLIDE 5 — Live Demo
 
 # What It Looks Like in Practice
 
-**Step 1 — Declare your resources** (`infrasync.yaml`)
+Step 1 — Declare your resources in infrasync.yaml
 
 ```yaml
 resources:
@@ -96,7 +97,7 @@ resources:
       - fs_directory.output_dir
 ```
 
-**Step 2 — Run `plan` to see what will happen**
+Step 2 — Run plan to preview what will happen
 
 ```
 $ python -m infrasync plan
@@ -115,7 +116,7 @@ InfraSync Plan:
 Plan: 3 to create, 0 to update, 0 to destroy.
 ```
 
-**Step 3 — Apply and confirm**
+Step 3 — Apply and confirm everything is in sync
 
 ```
 $ python -m infrasync apply
@@ -127,17 +128,16 @@ $ python -m infrasync apply
 Applied: 3 created, 0 updated, 0 destroyed.
 
 $ python -m infrasync plan
+
   No changes. Infrastructure is in sync.
 ```
 
-**Step 4 — Simulate drift and detect it**
+Step 4 — Simulate drift and watch it get caught
 
 ```
 $ echo "someone changed this" > ./managed/README.md
 
 $ python -m infrasync plan
-
-InfraSync Plan:
 
   ~ fs_file.readme (drift detected — changed outside infrasync)
       content: someone changed this => Hello World\nManaged by InfraSync.\n
@@ -145,48 +145,46 @@ InfraSync Plan:
 Plan: 0 to create, 1 to update, 0 to destroy.
 
 $ python -m infrasync apply
+
   updated  fs_file.readme
+
 Applied: 0 created, 1 updated, 0 destroyed.
 ```
 
-Drift detected, corrected, done.
-
 ---
 
-## SLIDE 6 — Provider Pattern & What's Next
+# SLIDE 6 — Provider Pattern and What Is Next
 
 # The Design That Makes It Extensible
 
-**Right now:** InfraSync manages files and directories on your local filesystem.
+![Dependency Graph](diagrams/dependency-graph.png)
 
-**The architecture makes adding any backend straightforward:**
+Right now InfraSync manages files and directories on the local filesystem. The architecture makes adding any backend straightforward — implement five methods and register one line.
 
 ```python
 class AWSProvider(Provider):
-    def read(self, resource):      # describe the EC2 instance / S3 bucket
-    def create(self, resource):    # boto3 call to create it
-    def update(self, resource):    # boto3 call to modify it
-    def delete(self, resource):    # boto3 call to remove it
+    def read(self, resource):        # describe the EC2 instance or S3 bucket
+    def create(self, resource):      # boto3 call to create it
+    def update(self, resource):      # boto3 call to modify it
+    def delete(self, resource):      # boto3 call to remove it
     def fingerprint(self, resource): # hash of desired attributes
 
-# One line in registry.py:
+# One line in registry.py
 _PROVIDERS["aws_instance"] = AWSProvider()
 ```
 
-The engine, planner, state manager, dependency graph, and CLI are untouched. That is the provider-agnostic design in practice.
+The engine, planner, state manager, dependency graph, and CLI stay completely untouched.
 
-**Trade-offs made intentionally:**
+| Decision            | Reason                        | Limitation                        |
+|---------------------|-------------------------------|-----------------------------------|
+| Local JSON state    | Simple, human-readable        | No team sharing, no locking       |
+| Sequential apply    | Guarantees dependency order   | Slower on large resource sets     |
+| SHA-256 fingerprint | Fast drift detection          | Does not track file permissions   |
+| YAML config         | Readable, no custom parser    | No variable interpolation         |
 
-| Decision | Reason | Limitation |
-|----------|--------|------------|
-| Local JSON state | Simple, human-readable | No team sharing, no locking |
-| Sequential apply | Guarantees dependency order | Slower on large resource sets |
-| SHA-256 fingerprint | Fast drift detection | Doesn't track permissions |
-| YAML config | Readable, no custom parser | No variable interpolation |
-
-**With more time:**
-- Remote state (S3 + DynamoDB locking)
-- Import existing resources without recreating
+With more time:
+- Remote state via S3 with DynamoDB locking
+- Import existing resources without recreating them
 - Parallel execution for independent resources
 - Additional providers — cloud, database, HTTP API
 - Variable interpolation in config files
