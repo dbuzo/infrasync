@@ -106,6 +106,16 @@ Example state after apply:
 
 The state file is the bridge between runs. Without it, the engine has no memory of what it previously did and cannot distinguish "new resource" from "already applied."
 
+Example edge case:
+  - T=0: Config says awsResource exists, AWS actual state matches, state file is written.
+  - T=2: State file becomes empty, but config and AWS still agree.
+  - InfraSync should not recreate the resource.
+  - Instead it treats the resource as already in sync and adopts the existing real-world resource back into state.
+
+InfraSync also handles the edge case where desired state and actual world match, but the state file is missing or corrupted. In that scenario the engine does not blindly recreate the resource. Instead it treats the resource as already in sync and adopts it into managed state.
+
+State now preserves dependency metadata for each resource, so destroy operations can safely reverse the dependency order even when resources are removed from config.
+
 
 PLAN OUTPUT
 
@@ -185,6 +195,10 @@ The CLI hands commands to the Reconciliation Engine, which reads your config, lo
 
 PROVIDER INTERFACE
 
+InfraSync is built around a generic provider interface. The core engine only
+interacts with base provider methods. Provider implementations translate
+resource intent into concrete operations for their platform.
+
 Every provider must implement five methods:
 
   read(resource)
@@ -206,6 +220,10 @@ Every provider must implement five methods:
     Used for drift detection: if the real-world fingerprint differs from the
     desired fingerprint, the resource has drifted.
 
+This interface is intentionally provider-agnostic. The engine does not need to
+understand AWS, GitHub, database schemas, or filesystem internals. It only
+needs to operate against a common provider contract.
+
 For the filesystem provider:
   fs_file fingerprint = SHA-256 of the desired content string
   fs_directory fingerprint = SHA-256 of the desired path string (directories are fingerprinted by existence)
@@ -224,6 +242,7 @@ Detection works by comparing checksums:
   At plan time, the engine reads the real-world content and computes its SHA-256.
   If real-world checksum differs from state checksum, drift has occurred.
   If real-world checksum differs from desired checksum, an update is needed.
+  If a resource already exists and matches desired state, InfraSync can adopt it into managed state without recreating it.
 
 The distinction matters: if the state checksum differs from real-world but the config also changed, the engine determines whether this is external drift or simply a config update by comparing all three values.
 
@@ -315,7 +334,7 @@ KNOWN LIMITATIONS
   No module system — cannot compose reusable resource groups
   Filesystem provider only — designed for extensibility but only one backend ships
   No state locking — concurrent applies could corrupt state
-  No import — cannot adopt pre-existing resources without recreating them
+  No import command — the engine can implicitly adopt matching resources into state, but it cannot yet import arbitrary existing resources with mismatched configuration.
   Permissions not tracked — file content is tracked, not chmod/chown
 
 

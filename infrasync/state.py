@@ -42,6 +42,7 @@ def load_state(state_path: str = STATE_FILE) -> Dict[str, ResourceState]:
             attributes=data["attributes"],
             checksum=data["checksum"],
             last_applied=data["last_applied"],
+            depends_on=data.get("depends_on", []),
         )
 
     return resources
@@ -61,6 +62,7 @@ def save_state(resources: Dict[str, ResourceState], state_path: str = STATE_FILE
             "attributes": rs.attributes,
             "checksum": rs.checksum,
             "last_applied": rs.last_applied,
+            "depends_on": rs.depends_on,
         }
 
     with open(state_path, "w") as f:

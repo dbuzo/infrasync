@@ -41,6 +41,7 @@ class ResourceState:
     attributes: dict
     checksum: str
     last_applied: str  # ISO timestamp
+    depends_on: List[str] = field(default_factory=list)
 
 
 @dataclass

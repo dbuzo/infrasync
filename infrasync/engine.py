@@ -14,6 +14,7 @@ from .state import load_state, save_state, init_state
 from .plan import compute_plan
 from .models import Resource, ResourceState, PlanAction, ActionType
 from .providers.registry import get_provider
+from .graph import topological_sort
 from .utils import now_iso, color_action, Colors
 
 
@@ -46,10 +47,7 @@ def cmd_apply(config_path: str = "infrasync.yaml"):
     state = load_state()
     actions = compute_plan(resources, state)
 
-    # Filter out no-ops
-    actionable = [a for a in actions if a.action != ActionType.NOOP]
-
-    if not actionable:
+    if not actions:
         print("\nNo changes needed. Infrastructure is in sync.")
         return
 
@@ -62,10 +60,24 @@ def cmd_apply(config_path: str = "infrasync.yaml"):
     errors = 0
 
     for action in actions:
-        if action.action == ActionType.NOOP:
-            continue
-
         provider = get_provider(action.resource.type)
+
+        if action.action == ActionType.NOOP:
+            if action.resource.address not in state:
+                # Adopt an existing resource that already matches desired state.
+                real_world = provider.read(action.resource)
+                if real_world is not None:
+                    state[action.resource.address] = ResourceState(
+                        address=action.resource.address,
+                        type=action.resource.type,
+                        name=action.resource.name,
+                        attributes=real_world,
+                        checksum=provider.fingerprint(action.resource),
+                        last_applied=now_iso(),
+                        depends_on=action.resource.depends_on,
+                    )
+                    save_state(state)
+            continue
 
         try:
             if action.action == ActionType.CREATE:
@@ -78,6 +90,7 @@ def cmd_apply(config_path: str = "infrasync.yaml"):
                     attributes=result,
                     checksum=checksum,
                     last_applied=now_iso(),
+                    depends_on=action.resource.depends_on,
                 )
                 created += 1
                 print(f"  {Colors.GREEN}+ {action.resource.address}{Colors.RESET}")
@@ -92,6 +105,7 @@ def cmd_apply(config_path: str = "infrasync.yaml"):
                     attributes=result,
                     checksum=checksum,
                     last_applied=now_iso(),
+                    depends_on=action.resource.depends_on,
                 )
                 updated += 1
                 print(f"  {Colors.YELLOW}~ {action.resource.address}{Colors.RESET}")
@@ -130,25 +144,31 @@ def cmd_destroy():
     print(f"\n{Colors.BOLD}Destroying all managed resources...{Colors.RESET}\n")
 
     destroyed = 0
-    # Destroy in reverse order of addresses (simple heuristic)
-    # A proper implementation would reverse the dependency graph
-    addresses = list(reversed(sorted(state.keys())))
-
-    for address in addresses:
-        rs = state[address]
-        resource = Resource(
+    destroy_resources = [
+        Resource(
             type=rs.type,
             name=rs.name,
             attributes=rs.attributes,
+            depends_on=rs.depends_on,
         )
+        for rs in state.values()
+    ]
+
+    try:
+        ordered = list(reversed(topological_sort(destroy_resources, ignore_missing_dependencies=True)))
+    except ValueError as e:
+        print(f"Warning: could not compute reverse destroy order: {e}")
+        ordered = destroy_resources
+
+    for resource in ordered:
         provider = get_provider(resource.type)
 
         try:
             provider.delete(resource)
-            print(f"  {Colors.RED}- {address}{Colors.RESET}")
+            print(f"  {Colors.RED}- {resource.address}{Colors.RESET}")
             destroyed += 1
         except Exception as e:
-            print(f"  {Colors.RED}ERROR destroying {address}: {e}{Colors.RESET}")
+            print(f"  {Colors.RED}ERROR destroying {resource.address}: {e}{Colors.RESET}")
 
     # Clear state
     save_state({})

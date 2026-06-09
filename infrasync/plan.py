@@ -48,14 +48,15 @@ def compute_plan(
                     reason="new resource",
                 ))
             else:
-                # Exists in world but not in state (maybe created manually)
+                # Exists in world but not in state (maybe created manually,
+                # or the state file was lost/corrupted while the resource still exists).
                 real_checksum = real_world.get("checksum", "")
                 if real_checksum == desired_checksum:
-                    # World matches config — just adopt into state (noop)
+                    # World matches config — adopt it into state without recreating.
                     actions.append(PlanAction(
                         action=ActionType.NOOP,
                         resource=resource,
-                        reason="already matches desired state",
+                        reason="existing resource matches desired state; adopt into state",
                     ))
                 else:
                     # World exists but differs from config — update

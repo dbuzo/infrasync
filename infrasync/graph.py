@@ -9,10 +9,14 @@ from .models import Resource
 from typing import List
 
 
-def topological_sort(resources: List[Resource]) -> List[Resource]:
+def topological_sort(resources: List[Resource], ignore_missing_dependencies: bool = False) -> List[Resource]:
     """
     Sort resources so dependencies come before dependents.
     Raises ValueError if a cycle is detected.
+
+    If ignore_missing_dependencies is True, any dependency that is not part of
+    the provided resource set is ignored. This is useful when ordering destroy
+    operations for resources that may depend on resources being retained.
     """
     # Build adjacency: address -> list of addresses that depend on it
     address_map = {r.address: r for r in resources}
@@ -22,6 +26,8 @@ def topological_sort(resources: List[Resource]) -> List[Resource]:
     for r in resources:
         for dep in r.depends_on:
             if dep not in address_map:
+                if ignore_missing_dependencies:
+                    continue
                 raise ValueError(
                     f"Resource '{r.address}' depends on '{dep}', "
                     f"which is not defined in config."
