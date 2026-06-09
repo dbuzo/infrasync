@@ -178,43 +178,9 @@ COMMANDS
 
 ARCHITECTURE
 
-  Config (desired)    State (recorded)    Real World (actual)
-       |                    |                    |
-       +--------------------+--------------------+
-                            |
-                            v
-                 +---------------------+
-                 |  Reconciliation     |
-                 |  Engine             |
-                 |                     |
-                 |  - Config Parser    |
-                 |  - State Manager    |
-                 |  - Plan Engine      |
-                 |  - Dependency Graph |
-                 +----------+----------+
-                            |
-                            v
-                 +---------------------+
-                 |  Provider Interface |
-                 |  (abstract)         |
-                 +----------+----------+
-                            |
-              +-------------+-------------+
-              |                           |
-   +------------------+       +------------------+
-   | Filesystem       |       | Future Providers |
-   | Provider         |       | (cloud, DB, HTTP)|
-   |                  |       |                  |
-   | - fs_file        |       | - mock_ec2       |
-   | - fs_directory   |       | - http_endpoint  |
-   +------------------+       +------------------+
-              |
-              v
-       Real World (disk)
-
 ![System Architecture](docs/diagrams/system-architecture.png)
 
-The engine never imports or references the filesystem provider directly. It goes through the provider registry, which maps resource types to their implementation. This means adding a cloud provider or database provider requires zero changes to the engine code — you implement the interface and register the type.
+The CLI hands commands to the Reconciliation Engine, which reads your config, loads its state file, and calls the Provider Registry to inspect the real world. The Plan Engine runs a three-way comparison across all three sources, produces a sorted action list, and the engine executes each action through the Provider Interface — currently backed by the Filesystem Provider, swappable for any backend without touching the engine.
 
 
 PROVIDER INTERFACE
