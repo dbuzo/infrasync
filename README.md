@@ -188,7 +188,7 @@ COMMANDS
 
 ARCHITECTURE
 
-The architecture diagram is available in `docs/mermaid_diagrams.md` (Diagram 1).
+![System Architecture](docs/diagrams/system-architecture.png)
 
 The CLI hands commands to the Reconciliation Engine, which reads your config, loads its state file, and calls the Provider Registry to inspect the real world. The Plan Engine runs a three-way comparison across all three sources, produces a sorted action list, and the engine executes each action through the Provider Interface — currently backed by the Filesystem Provider, swappable for any backend without touching the engine.
 
