@@ -373,6 +373,7 @@ PROJECT STRUCTURE
     basic.yaml             Simple three-resource config with dependency
   docs/
     mermaid_diagrams.md    All architecture diagrams in Mermaid syntax
+    costs_and_references.md  Cost considerations, pricing links, and references
   infrasync.yaml           Default config (used if no --config flag)
   requirements.txt         Python dependencies (pyyaml)
   README.md                This file
