@@ -33,6 +33,13 @@ The answer determines the action:
 This logic handles every scenario: new resources, config edits, external drift, external deletion, and resource removal from config.
 
 
+DOCUMENTATION
+
+  - docs/costs_and_references.md  — consolidated references, run instructions, architecture notes, and operational considerations.
+  - docs/mermaid_diagrams.md      — visual diagrams and architecture flowcharts.
+  - docs/diagrams/system-architecture.png — main system architecture diagram.
+
+
 QUICK START
 
   git clone https://github.com/dbuzo/infrasync.git
