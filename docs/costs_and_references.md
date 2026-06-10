@@ -1,44 +1,78 @@
-# InfraSync — Costs, Pricing & References
+# InfraSync — References & Further Reading
 
-This page summarizes cost considerations, pricing references, and links for teams evaluating or running InfraSync in production. Use this as a starting point for budget planning and vendor research.
+This document collects references, run instructions, and links related to the work completed in this repository. It is intended as a single place for reviewers and maintainers to find:
 
-## Overview
+- design references and architecture diagrams
+- post-interview changes and rationale
+- run & test commands
+- cost and operational considerations
+- external resources and vendor pricing links
 
-InfraSync itself is a small Python tool; direct costs come from the resources it manages and the infrastructure used to store state, locking, CI, and monitoring. Review the sections below to understand where charges may occur.
+Use this as the central reference when evaluating InfraSync for production use or for preparing follow-up discussions.
 
-## Cost Categories
+## Post-interview improvements (summary)
 
-- Resource costs: Any cloud or SaaS resources managed by providers (VMs, databases, storage buckets).
-- State storage: Remote state backends (S3, GCS, Azure Blob) incur storage and egress costs.
-- Locking and coordination: DynamoDB/Cloud Datastore or managed lock services may have per-request and storage costs.
-- API calls / rate limits: Providers like AWS, GitHub, or third-party APIs may charge for calls or impose rate limits that affect throughput.
-- CI / automation: GitHub Actions, GitLab CI, or other runners may incur compute minutes or concurrency costs.
-- Monitoring & logging: CloudWatch, Stackdriver, Datadog, etc., add storage and ingest costs for logs and metrics.
-- Network egress: Cross-region or public internet egress for backups, state sync, or provider API traffic.
+These items were added or improved after the interview exercise to harden the design and implementation:
 
-## Examples & Ballpark Estimates
+- Adoption edge case: when desired config and real world match but the local state file is missing, InfraSync will now adopt the existing resource into state instead of attempting to recreate it. See `infrasync/plan.py` and `infrasync/engine.py`.
+- Persisted dependency metadata: `ResourceState` now stores `depends_on` so destroy ordering can be computed from state. See `infrasync/models.py` and `infrasync/state.py`.
+- Safer destroy ordering: `topological_sort()` gained an option to ignore missing dependencies; destroy now computes reverse-order using persisted dependency metadata. See `infrasync/graph.py` and `infrasync/engine.py`.
+- Documentation: README updates describing adoption behavior, provider abstraction, and a new references doc (this file). Main architecture diagram restored at `docs/diagrams/system-architecture.png` and shown in `README.md`.
 
-- Local filesystem provider: effectively zero cloud costs (local disk I/O only).
-- Remote state in S3 + DynamoDB locking (small team, light usage): expect low cents-per-month for state objects; DynamoDB on-demand requests may add a few dollars monthly depending on frequency. See AWS pricing below for details.
-- Managing an EC2 or Cloud VM: assume base VM pricing + storage (EBS) + network. See AWS EC2/EBS pricing.
+Commits: `1c1a9ac` (adoption & dependency changes), `0d880c4` (temporary cleanup), `1c039d2` (restored diagram), `846af3b` (added this references doc).
 
-Note: Actual costs vary widely by region, instance types, retention policies, and usage patterns. Use provider calculators for precise budgeting.
+## Architecture & Design references
 
-## Best Practices to Reduce Costs
+- Core design: three-way reconciliation (config vs state vs world) — see `README.md` and `docs/mermaid_diagrams.md`.
+- Provider abstraction: implement the `Provider` interface in `infrasync/providers/base.py` and register types in `infrasync/providers/registry.py`.
+- Dependency graph and ordering: `infrasync/graph.py` implements Kahn's algorithm for topological sorting; used by `plan` and `apply` flows.
+- State model: `infrasync/state.py` and `infrasync/models.py` document how state is stored and versioned.
 
-- Use local providers for development and testing to avoid cloud fees.
-- Retain minimal state history and compress/expire old logs to reduce storage costs.
-- Batch operations where possible to reduce API call volume.
-- Use reserved or saving-plan options for predictable long-running resources.
-- Add quotas and alerts to detect runaway automation that increases bill unexpectedly.
+## How to run locally (quick commands)
 
-## Operational Considerations
+1. Create a virtualenv and install deps:
 
-- State backups: store encrypted backups of state (S3 lifecycle rules) and account for storage and retrieval costs.
-- Concurrency: if multiple CI runners may run `apply` concurrently, implement remote locking to avoid race conditions—this can add small additional costs.
-- Import vs adopt: importing existing resources may require extra API calls and verification steps.
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
 
-## References and Pricing Links
+2. Initialize state and run an example:
+
+```bash
+python -m infrasync init
+python -m infrasync plan
+python -m infrasync apply
+```
+
+3. Simulate drift and plan again:
+
+```bash
+echo "rogue edit" > ./managed/README.md
+python -m infrasync plan
+```
+
+## Tests and validation
+
+There are no automated tests included yet. Suggested minimal tests:
+
+- Unit tests for `compute_plan()` scenarios: new resource, drift, config update, orphaned destroy.
+- Integration tests for `FilesystemProvider` using a temporary directory.
+- CI: add a lightweight GitHub Actions workflow to run unit tests and flake checks.
+
+## Costs & operational considerations
+
+See the Cost categories and best practices below (short summary):
+
+- Resource costs depend on the provider — local filesystem has no cloud cost.
+- Remote state backends (S3/GCS/Azure) add storage and egress charges.
+- Locking (DynamoDB or similar) enables safe concurrent applies at a small cost.
+- Monitoring, logging, CI runners, and network egress are additional operational expenses.
+
+For detailed links and price pages, see the external references section below.
+
+## External references & pricing links
 
 - Terraform docs: https://www.terraform.io/docs
 - AWS Pricing: https://aws.amazon.com/pricing/
@@ -50,14 +84,10 @@ Note: Actual costs vary widely by region, instance types, retention policies, an
 - HashiCorp Remote State / HCP: https://www.hashicorp.com/products/terraform/cloud
 - Monitoring: CloudWatch (https://aws.amazon.com/cloudwatch/pricing/), Datadog (https://www.datadoghq.com/pricing/)
 
-## Template checklist for estimating costs
+## Contribution & contact
 
-1. List resources to manage (type, count, region).
-2. Identify state backend and locking mechanism.
-3. Estimate frequency of `plan`/`apply` runs and API call volume.
-4. Add storage and monitoring retention estimates.
-5. Run provider cost calculators and add a monthly buffer (e.g., 20%).
+If you'd like to discuss the architecture, open an issue or contact the maintainer listed in the repository. For follow-up interviews or detailed walkthroughs, the `README.md` and `docs/mermaid_diagrams.md` contain the core talking points and visuals.
 
-## Notes
+---
 
-This document is a starting point. For production deployments, create a dedicated runbook or cost model that lists concrete resource types, sizes, and retention policies.
+This references file is meant to be a living document — please suggest additions for any services, pricing links, or operational runbooks you want included.
