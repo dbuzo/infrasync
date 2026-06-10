@@ -8,7 +8,7 @@ This document collects references, run instructions, and links related to the wo
 - cost and operational considerations
 - external resources and vendor pricing links
 
-Use this as the central reference when evaluating InfraSync for production use or for preparing follow-up discussions.
+Use this as the central reference when evaluating InfraSync for production use or for further discussion.
 
 ## Recent improvements (summary)
 
@@ -20,6 +20,26 @@ These items were added or improved to harden the design and implementation:
 - Documentation: README updates describing adoption behavior, provider abstraction, and a new references doc (this file). Main architecture diagram restored at `docs/diagrams/system-architecture.png` and shown in `README.md`.
 
 Commits: `1c1a9ac` (adoption & dependency changes), `0d880c4` (temporary cleanup), `1c039d2` (restored diagram), `846af3b` (added this references doc).
+
+## Repository updates
+
+Added a new `## Core concepts` section to `docs/costs_and_references.md` that includes:
+
+- desired / actual / live state
+- remote state vs local missing files
+- AWS and cloud provider concepts
+- security, SRE, and subsystem management
+
+Expanded the `## External references & pricing links` section with:
+
+- Terraform state, provider development, drift detection
+- AWS IAM, CloudWatch, CloudFormation, Well-Architected
+- Vault secrets, OWASP security, Google SRE guidance
+
+Confirmed there is no remaining "Post-interview" text in the repo.
+
+If useful, a standalone `docs/concepts.md` file can be added containing the
+core concept notes above.
 
 ## Architecture & Design references
 
