@@ -106,6 +106,7 @@ For detailed links and price pages, see the external references section below.
 - Terraform docs: https://www.terraform.io/docs
 - Terraform state & remote backend: https://www.terraform.io/language/state
 - Terraform provider development: https://www.terraform.io/plugin/sdk
+- Terraform drift detection & state management: https://www.terraform.io/language/state/sensitive-data
 - AWS Pricing: https://aws.amazon.com/pricing/
 - AWS S3 Pricing: https://aws.amazon.com/s3/pricing/
 - AWS DynamoDB Pricing: https://aws.amazon.com/dynamodb/pricing/
@@ -113,11 +114,11 @@ For detailed links and price pages, see the external references section below.
 - AWS CloudWatch pricing: https://aws.amazon.com/cloudwatch/pricing/
 - AWS CloudFormation docs: https://docs.aws.amazon.com/cloudformation/index.html
 - AWS Well-Architected Framework: https://aws.amazon.com/architecture/well-architected/
+- AWS operational excellence: https://aws.amazon.com/architecture/well-architected/
 - Google Cloud Pricing: https://cloud.google.com/pricing
 - Azure Pricing: https://azure.microsoft.com/pricing/
 - GitHub Actions usage & pricing: https://docs.github.com/actions/learn-github-actions/usage-limits-billing-and-administration
 - HashiCorp Remote State / HCP: https://www.hashicorp.com/products/terraform/cloud
-- Remote state and drift detection: https://www.terraform.io/language/state/sensitive-data
 - Security best practices: https://owasp.org/www-project-top-ten/
 - Secrets management: https://www.vaultproject.io/docs
 - SRE guidance: https://sre.google/sre-book/table-of-contents/
